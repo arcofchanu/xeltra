@@ -1,0 +1,5 @@
+{
+  "name": "Xeltra",
+  "description": "A web application focused on crafting, testing, and perfecting prompts. Use the Playground to build prompts in various formats and enter the Dungeon to see them in action.",
+  "requestFramePermissions": []
+}
