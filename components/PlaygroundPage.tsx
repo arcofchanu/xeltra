@@ -482,7 +482,7 @@ const PlaygroundPage = () => {
     const content = editorInstanceRef.current.getValue();
     navigator.clipboard.writeText(content).then(() => {
         setCopyButtonText('Copied!');
-        setTimeout(() => setCopyButtonText('Copy Code'), 2000);
+        setTimeout(() => setCopyButtonText('Copy Prompt'), 2000);
     }).catch(err => {
         console.error('Failed to copy text: ', err);
         alert('Failed to copy code to clipboard.');
