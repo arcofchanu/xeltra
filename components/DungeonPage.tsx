@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useClickSound } from '../utils/useClickSound';
@@ -7,6 +7,160 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+};
+
+// Function to render markdown-like content
+const renderMessageContent = (content: string) => {
+  // Split by code blocks first
+  const parts: React.ReactNode[] = [];
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, match.index);
+      parts.push(
+        <span key={`text-${key++}`}>
+          {renderTextWithHeadings(textBefore)}
+        </span>
+      );
+    }
+
+    // Add code block
+    const language = match[1] || 'code';
+    const code = match[2];
+    parts.push(
+      <div key={`code-${key++}`} className="my-2 bg-gray-100 border-2 border-black p-3 rounded overflow-x-auto">
+        <div className="text-xs font-bold text-gray-600 mb-1">{language}</div>
+        <pre className="text-sm font-mono text-black">
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    const textAfter = content.substring(lastIndex);
+    parts.push(
+      <span key={`text-${key++}`}>
+        {renderTextWithHeadings(textAfter)}
+      </span>
+    );
+  }
+
+  return <div>{parts}</div>;
+};
+
+// Function to render text with headings
+const renderTextWithHeadings = (text: string) => {
+  const lines = text.split('\n');
+  const parts: React.ReactNode[] = [];
+  let key = 0;
+
+  lines.forEach((line, idx) => {
+    // Check for headings
+    const h1Match = line.match(/^# (.+)$/);
+    const h2Match = line.match(/^## (.+)$/);
+    const h3Match = line.match(/^### (.+)$/);
+
+    if (h1Match) {
+      parts.push(
+        <h1 key={`h1-${key++}`} className="text-2xl font-black mt-4 mb-2">
+          {renderInlineFormatting(h1Match[1])}
+        </h1>
+      );
+    } else if (h2Match) {
+      parts.push(
+        <h2 key={`h2-${key++}`} className="text-xl font-black mt-3 mb-2">
+          {renderInlineFormatting(h2Match[1])}
+        </h2>
+      );
+    } else if (h3Match) {
+      parts.push(
+        <h3 key={`h3-${key++}`} className="text-lg font-black mt-2 mb-1">
+          {renderInlineFormatting(h3Match[1])}
+        </h3>
+      );
+    } else {
+      // Regular line
+      parts.push(
+        <span key={`line-${key++}`} className="whitespace-pre-wrap">
+          {renderInlineFormatting(line)}
+          {idx < lines.length - 1 && '\n'}
+        </span>
+      );
+    }
+  });
+
+  return parts;
+};
+
+// Function to render inline formatting (bold, italic, inline code)
+const renderInlineFormatting = (text: string) => {
+  const parts: (string | React.ReactElement)[] = [];
+  let remaining = text;
+  let key = 0;
+
+  // Process all patterns: inline code, bold, italic
+  const patterns = [
+    { regex: /`([^`]+)`/, type: 'code' },
+    { regex: /\*\*(.+?)\*\*/, type: 'bold' },
+    { regex: /\*(.+?)\*/, type: 'italic' },
+  ];
+
+  while (remaining.length > 0) {
+    let earliestMatch: { index: number; length: number; content: string; type: string } | null = null;
+
+    // Find the earliest match among all patterns
+    for (const pattern of patterns) {
+      const match = remaining.match(pattern.regex);
+      if (match && match.index !== undefined) {
+        if (!earliestMatch || match.index < earliestMatch.index) {
+          earliestMatch = {
+            index: match.index,
+            length: match[0].length,
+            content: match[1],
+            type: pattern.type,
+          };
+        }
+      }
+    }
+
+    if (earliestMatch) {
+      // Add text before the match
+      if (earliestMatch.index > 0) {
+        parts.push(remaining.substring(0, earliestMatch.index));
+      }
+
+      // Add the formatted element
+      if (earliestMatch.type === 'code') {
+        parts.push(
+          <code key={`inline-${key++}`} className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono border border-gray-300">
+            {earliestMatch.content}
+          </code>
+        );
+      } else if (earliestMatch.type === 'bold') {
+        parts.push(<strong key={`bold-${key++}`}>{earliestMatch.content}</strong>);
+      } else if (earliestMatch.type === 'italic') {
+        parts.push(<em key={`italic-${key++}`}>{earliestMatch.content}</em>);
+      }
+
+      // Move to the rest of the string
+      remaining = remaining.substring(earliestMatch.index + earliestMatch.length);
+    } else {
+      // No more matches, add the rest
+      parts.push(remaining);
+      break;
+    }
+  }
+
+  return parts.length > 0 ? parts : text;
 };
 
 export default function DungeonPage() {
@@ -151,7 +305,9 @@ export default function DungeonPage() {
                         : 'bg-white'
                     }`}
                   >
-                    <p className="font-bold whitespace-pre-wrap text-black">{message.content}</p>
+                    <div className="font-bold text-black">
+                      {renderMessageContent(message.content)}
+                    </div>
                     <p className="text-xs mt-2 font-bold text-black opacity-60">
                       {message.timestamp.toLocaleTimeString()}
                     </p>
