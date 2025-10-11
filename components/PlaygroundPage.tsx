@@ -12,22 +12,148 @@ import yaml from 'js-yaml';
 // without TypeScript complaining.
 declare const monaco: any;
 
-// Type definitions for analysis result
-type ImprovementExample = {
-  before: string;
-  after: string;
-};
-
-type AnalysisCriterion = {
-  name: string;
-  score: number;
-  feedback: string;
-  improvementExample?: ImprovementExample;
-};
-
 type AnalysisResult = {
-  overallScore: number;
-  criteria: AnalysisCriterion[];
+  feedback: string;
+};
+
+// Markdown rendering functions
+const renderMessageContent = (content: string) => {
+  const parts: React.ReactNode[] = [];
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const textBefore = content.substring(lastIndex, match.index);
+      parts.push(
+        <span key={`text-${key++}`}>
+          {renderTextWithHeadings(textBefore)}
+        </span>
+      );
+    }
+
+    const language = match[1] || 'code';
+    const code = match[2];
+    parts.push(
+      <div key={`code-${key++}`} className="my-3 bg-gray-100 border-2 border-black p-3 rounded overflow-x-auto">
+        <div className="text-xs font-bold text-gray-600 mb-1">{language}</div>
+        <pre className="text-sm font-mono text-black">
+          <code>{code}</code>
+        </pre>
+      </div>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    const textAfter = content.substring(lastIndex);
+    parts.push(
+      <span key={`text-${key++}`}>
+        {renderTextWithHeadings(textAfter)}
+      </span>
+    );
+  }
+
+  return <div>{parts}</div>;
+};
+
+const renderTextWithHeadings = (text: string) => {
+  const lines = text.split('\n');
+  const parts: React.ReactNode[] = [];
+  let key = 0;
+
+  lines.forEach((line, idx) => {
+    const h1Match = line.match(/^# (.+)$/);
+    const h2Match = line.match(/^## (.+)$/);
+    const h3Match = line.match(/^### (.+)$/);
+
+    if (h1Match) {
+      parts.push(
+        <h1 key={`h1-${key++}`} className="text-2xl font-black mt-4 mb-2 text-black">
+          {renderInlineFormatting(h1Match[1])}
+        </h1>
+      );
+    } else if (h2Match) {
+      parts.push(
+        <h2 key={`h2-${key++}`} className="text-xl font-black mt-3 mb-2 text-black">
+          {renderInlineFormatting(h2Match[1])}
+        </h2>
+      );
+    } else if (h3Match) {
+      parts.push(
+        <h3 key={`h3-${key++}`} className="text-lg font-black mt-2 mb-1 text-black">
+          {renderInlineFormatting(h3Match[1])}
+        </h3>
+      );
+    } else {
+      parts.push(
+        <span key={`line-${key++}`} className="whitespace-pre-wrap">
+          {renderInlineFormatting(line)}
+          {idx < lines.length - 1 && '\n'}
+        </span>
+      );
+    }
+  });
+
+  return parts;
+};
+
+const renderInlineFormatting = (text: string) => {
+  const parts: (string | React.ReactElement)[] = [];
+  let remaining = text;
+  let key = 0;
+
+  const patterns = [
+    { regex: /`([^`]+)`/, type: 'code' },
+    { regex: /\*\*(.+?)\*\*/, type: 'bold' },
+    { regex: /\*(.+?)\*/, type: 'italic' },
+  ];
+
+  while (remaining.length > 0) {
+    let earliestMatch: { index: number; length: number; content: string; type: string } | null = null;
+
+    for (const pattern of patterns) {
+      const match = remaining.match(pattern.regex);
+      if (match && match.index !== undefined) {
+        if (!earliestMatch || match.index < earliestMatch.index) {
+          earliestMatch = {
+            index: match.index,
+            length: match[0].length,
+            content: match[1],
+            type: pattern.type,
+          };
+        }
+      }
+    }
+
+    if (earliestMatch) {
+      if (earliestMatch.index > 0) {
+        parts.push(remaining.substring(0, earliestMatch.index));
+      }
+
+      if (earliestMatch.type === 'code') {
+        parts.push(
+          <code key={`inline-${key++}`} className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono border border-gray-300">
+            {earliestMatch.content}
+          </code>
+        );
+      } else if (earliestMatch.type === 'bold') {
+        parts.push(<strong key={`bold-${key++}`}>{earliestMatch.content}</strong>);
+      } else if (earliestMatch.type === 'italic') {
+        parts.push(<em key={`italic-${key++}`}>{earliestMatch.content}</em>);
+      }
+
+      remaining = remaining.substring(earliestMatch.index + earliestMatch.length);
+    } else {
+      parts.push(remaining);
+      break;
+    }
+  }
+
+  return parts.length > 0 ? parts : text;
 };
 
 const defaultPrompt: { [key: string]: string } = {
@@ -375,38 +501,49 @@ const PlaygroundPage = () => {
     setAnalysisResult(null);
     setIsAnalyzing(true);
 
-    const promptForAnalysis = `You are an expert prompt analyst for data-interchange formats. Analyze the following ${language.toUpperCase()} prompt.
-    Evaluate it based on these five criteria:
-    1.  **Structure & Formatting**: Well-formed, correctly indented, follows standard conventions.
-    2.  **Clarity & Readability**: Easy to understand, logical organization, clear naming.
-    3.  **Correctness**: Syntactically valid according to ${language.toUpperCase()} specifications.
-    4.  **Best Practices**: Follows common community conventions and effective patterns.
-    5.  **Conciseness**: Represents the data efficiently without unnecessary verbosity.
+    const promptForAnalysis = `You are an expert prompt engineer and AI interaction specialist. Analyze the following prompt written in ${language.toUpperCase()} format and provide detailed, actionable feedback about its quality and effectiveness.
 
-    For each criterion, provide a score from 0 to 10 (float is allowed) and brief, constructive feedback. Also provide an overall score, which must be the average of the five criteria scores.
-    Where applicable, provide a concise 'improvementExample' with a 'before' snippet from the original prompt and an 'after' snippet demonstrating the fix. If no example is relevant, omit the 'improvementExample' field for that criterion.
-    
-    Here is the prompt content to analyze:
-    \`\`\`${language}
-    ${promptContent}
-    \`\`\`
-    
-    Respond ONLY with a valid JSON object in this exact format:
-    {
-      "overallScore": number,
-      "criteria": [
-        {
-          "name": "criterion name",
-          "score": number,
-          "feedback": "feedback text",
-          "improvementExample": {
-            "before": "original snippet",
-            "after": "improved snippet"
-          }
-        }
-      ]
-    }
-    `;
+Evaluate the prompt across these dimensions:
+
+**1. Prompt Quality & Effectiveness**
+- Is the instruction clear and unambiguous?
+- Does it provide sufficient context for an AI to understand the task?
+- Are the expectations and desired outputs well-defined?
+- Does it use effective prompt engineering techniques (examples, constraints, format specifications)?
+
+**2. Structure & Format (${language.toUpperCase()})**
+- Is the ${language.toUpperCase()} structure well-formed and properly formatted?
+- Does it follow ${language.toUpperCase()} conventions and best practices?
+- Is the organization logical and easy to parse?
+
+**3. Clarity & Specificity**
+- Are instructions specific enough to get consistent results?
+- Is the language clear and professional?
+- Are there any ambiguous terms or vague requirements?
+
+**4. Completeness**
+- Does it include all necessary information (role, task, format, constraints)?
+- Are edge cases or special requirements addressed?
+- Would an AI have enough context to produce quality output?
+
+**5. Optimization Opportunities**
+- What could make this prompt more effective?
+- Are there prompt engineering techniques that could improve results?
+- Could the structure or wording be optimized?
+
+Here is the prompt to analyze:
+\`\`\`${language}
+${promptContent}
+\`\`\`
+
+Provide comprehensive feedback with markdown formatting. Include:
+- **Overall Assessment**: Summary of prompt quality and effectiveness
+- **Strengths**: What works well in this prompt
+- **Areas for Improvement**: Specific issues and weaknesses
+- **Recommendations**: Concrete suggestions with examples
+- **Improved Version** (if applicable): Show how the prompt could be enhanced
+
+Be constructive, detailed, and focus on making this prompt more effective for AI interactions. Use markdown formatting (headings, bold, code blocks, lists) to organize your feedback clearly.`;
 
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -418,14 +555,13 @@ const PlaygroundPage = () => {
                 'X-Title': 'Xeltra Prompt Analyzer'
             },
             body: JSON.stringify({
-                model: 'qwen/qwen3-coder:free',
+                model: 'mistralai/mistral-small-3.2-24b-instruct:free',
                 messages: [
                     {
                         role: 'user',
                         content: promptForAnalysis
                     }
-                ],
-                response_format: { type: 'json_object' }
+                ]
             })
         });
 
@@ -442,15 +578,7 @@ const PlaygroundPage = () => {
             throw new Error('No response content from API');
         }
 
-        // Extract JSON from markdown code blocks if present
-        let jsonText = resultText;
-        const jsonMatch = resultText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-        if (jsonMatch) {
-            jsonText = jsonMatch[1];
-        }
-
-        const resultJson = JSON.parse(jsonText);
-        setAnalysisResult(resultJson);
+        setAnalysisResult({ feedback: resultText });
 
     } catch (error) {
         console.error("Error analyzing prompt:", error);
@@ -820,56 +948,35 @@ const PlaygroundPage = () => {
               initial={{ y: 20, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl bg-white p-8 border-4 border-black shadow-brutal flex flex-col text-left max-h-[90vh] overflow-y-auto"
+              className="relative w-full max-w-3xl bg-white p-8 border-4 border-black shadow-brutal flex flex-col text-left max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-3xl font-bold mb-6 text-black">Analysis Report</h2>
-              
-              <div className="text-center mb-8">
-                  <p className="text-lg text-black/80">Overall Points</p>
-                  <p className="text-7xl font-extrabold text-primary">{analysisResult.overallScore.toFixed(1)}</p>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-black text-black">AI FEEDBACK</h2>
+                <motion.button
+                  onClick={() => setAnalysisResult(null)}
+                  className="bg-white p-2 border-2 border-black rounded-full hover:bg-red-400 hover:text-white transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  aria-label="Close analysis report"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </motion.button>
               </div>
               
-              <div className="space-y-6">
-                  {analysisResult.criteria.map((criterion, index) => (
-                      <div key={index}>
-                          <div className="flex justify-between items-baseline mb-1">
-                              <h3 className="font-bold text-lg text-black">{criterion.name}</h3>
-                              <p className="font-bold text-black/80">{criterion.score.toFixed(1)} / 10</p>
-                          </div>
-                          <div className="w-full bg-gray-200 border-2 border-black h-4">
-                              <motion.div
-                                  className="bg-primary h-full"
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${criterion.score * 10}%` }}
-                                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                              />
-                          </div>
-                          <p className="text-sm text-black/70 mt-2">{criterion.feedback}</p>
-                          {criterion.improvementExample && (
-                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                <div>
-                                    <p className="font-bold mb-1 text-red-600">Before:</p>
-                                    <pre className="bg-red-50 p-2 border-2 border-red-200 overflow-x-auto"><code>{criterion.improvementExample.before}</code></pre>
-                                </div>
-                                <div>
-                                    <p className="font-bold mb-1 text-green-600">After:</p>
-                                    <pre className="bg-green-50 p-2 border-2 border-green-200 overflow-x-auto"><code>{criterion.improvementExample.after}</code></pre>
-                                </div>
-                            </div>
-                          )}
-                      </div>
-                  ))}
+              <div className="prose prose-sm max-w-none text-black">
+                {renderMessageContent(analysisResult.feedback)}
               </div>
 
               <motion.button
                 onClick={() => setAnalysisResult(null)}
-                className="absolute top-3 right-3 bg-white p-2 border-2 border-black rounded-full hover:bg-red-400 hover:text-white transition-colors"
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                aria-label="Close analysis report"
+                className="mt-6 w-full px-6 py-3 bg-purple-500 text-white font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <CloseIcon />
+                CLOSE
               </motion.button>
             </motion.div>
           </motion.div>
