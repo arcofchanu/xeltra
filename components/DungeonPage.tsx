@@ -248,7 +248,7 @@ export default function DungeonPage() {
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b-4 border-black p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-black">DUNGEON</h1>
+          <h1 className="text-2xl font-black">DUNGEON (A.I. Chat)</h1>
           <div className="flex gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -257,7 +257,7 @@ export default function DungeonPage() {
                 playClick();
                 setMessages([]);
               }}
-              className="px-4 py-2 bg-red-500 text-white font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="px-4 py-2 bg-red-700 text-white font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               CLEAR
             </motion.button>
@@ -268,7 +268,7 @@ export default function DungeonPage() {
                 playClick();
                 navigate('/playground');
               }}
-              className="px-4 py-2 bg-purple-500 text-white font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="px-4 py-2 bg-purple-900 text-white font-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               BACK
             </motion.button>
@@ -379,3 +379,4 @@ export default function DungeonPage() {
     </div>
   );
 }
+
