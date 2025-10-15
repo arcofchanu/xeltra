@@ -476,13 +476,39 @@ const PlaygroundPage = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportAsTxt = () => {
+    if (!editorInstanceRef.current) return;
+    playClick();
+    
+    // Prompt user for custom filename
+    const defaultFilename = `prompt_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)}`;
+    const userFilename = prompt('Enter filename (without .txt extension):', defaultFilename);
+    
+    // If user cancels, don't export
+    if (userFilename === null) return;
+    
+    // Use provided filename or default if empty
+    const filename = userFilename.trim() || defaultFilename;
+    
+    const content = editorInstanceRef.current.getValue();
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopy = () => {
     if (!editorInstanceRef.current) return;
     playClick();
     const content = editorInstanceRef.current.getValue();
     navigator.clipboard.writeText(content).then(() => {
         setCopyButtonText('Copied!');
-        setTimeout(() => setCopyButtonText('Copy Prompt'), 2000);
+        setTimeout(() => setCopyButtonText('Copy Code'), 2000);
     }).catch(err => {
         console.error('Failed to copy text: ', err);
         alert('Failed to copy code to clipboard.');
@@ -757,6 +783,13 @@ Be constructive, detailed, and focus on making this prompt more effective for AI
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                     >
                                         Export Prompt
+                                    </motion.button>
+                                    <motion.button
+                                        onClick={handleExportAsTxt}
+                                        className={`${baseButtonClasses} ${inactiveButtonClasses}`}
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    >
+                                        Export as .txt
                                     </motion.button>
                                 </div>
                             </div>
