@@ -227,6 +227,7 @@ export default function DungeonPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [shouldAutoSend, setShouldAutoSend] = useState(false);
   
   // Initialize market prompts from localStorage or default
   const getInitialMarketPrompts = (): Prompt[] => {
@@ -523,10 +524,23 @@ logging:
     if (state?.forkedPrompt) {
       setInputMessage(state.forkedPrompt);
       setActiveTab('chat'); // Automatically select chat tab
+      setShouldAutoSend(true); // Mark that we should auto-send this message
       // Clear the state to prevent reloading on navigation
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  // Auto-send message when forked prompt is loaded
+  useEffect(() => {
+    if (shouldAutoSend && inputMessage && !isLoading && activeTab === 'chat') {
+      setShouldAutoSend(false);
+      // Small delay to ensure the UI is ready
+      const timer = setTimeout(() => {
+        handleSendMessage();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldAutoSend, inputMessage, isLoading, activeTab]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
