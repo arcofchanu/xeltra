@@ -108,7 +108,11 @@ const Header = () => {
             <>
               <li className="relative group">
                 <button className={`${navLinkClasses({ isActive: false })} flex items-center gap-2`}>
-                  <img src={user.photoUrl} alt={user.name} className="w-6 h-6 rounded-full border-2 border-black" />
+                  <img 
+                    src={user.photoUrl.includes('pravatar.cc') ? '/assets/USER.png' : user.photoUrl} 
+                    alt={user.name} 
+                    className="w-6 h-6 rounded-full border-2 border-black" 
+                  />
                   {user.name}
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white border-2 border-black shadow-brutal p-4 hidden group-hover:block">

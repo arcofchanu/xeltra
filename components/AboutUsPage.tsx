@@ -41,7 +41,7 @@ const AboutUsPage = () => {
           <h2 className="text-xl font-bold mb-4">Connect With Us</h2>
           <div className="flex flex-col sm:flex-row gap-4">
             <motion.a 
-              href="https://www.linkedin.com/in/ronitbsuthar" 
+              href="https://www.linkedin.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 px-6 py-3 border-2 border-black font-bold bg-white text-black hover:bg-primary hover:text-white hover:shadow-brutal transition-colors duration-200"
@@ -52,7 +52,7 @@ const AboutUsPage = () => {
               LinkedIn
             </motion.a>
             <motion.a 
-              href="https://www.x.com/arcofchanu" 
+              href="https://www.x.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 px-6 py-3 border-2 border-black font-bold bg-white text-black hover:bg-primary hover:text-white hover:shadow-brutal transition-colors duration-200"

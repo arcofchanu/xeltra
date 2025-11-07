@@ -177,7 +177,11 @@ const ProfilePage = () => {
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.div variants={itemVariants} className="bg-white p-6 border-4 border-black shadow-brutal flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-6">
-            <img src={user.photoUrl} alt="User profile" className="w-24 h-24 rounded-full border-4 border-primary" />
+            <img 
+              src={user.photoUrl.includes('pravatar.cc') ? '/assets/USER.png' : user.photoUrl} 
+              alt="User profile" 
+              className="w-24 h-24 rounded-full border-4 border-primary" 
+            />
             <div>
                 <h2 className="text-3xl font-bold text-black">{user.name}</h2>
                 <p className="text-lg text-black/70">{user.email}</p>
