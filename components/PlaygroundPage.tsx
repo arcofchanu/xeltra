@@ -581,7 +581,7 @@ Be constructive, detailed, and focus on making this prompt more effective for AI
                 'X-Title': 'Xeltra Prompt Analyzer'
             },
             body: JSON.stringify({
-                model: 'z-ai/glm-4.5-air:free',
+                model: 'openai/gpt-oss-20b:free',
                 messages: [
                     {
                         role: 'user',
