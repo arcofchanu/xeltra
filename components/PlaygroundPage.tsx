@@ -527,6 +527,11 @@ const PlaygroundPage = () => {
     setAnalysisResult(null);
     setIsAnalyzing(true);
 
+    // Retry logic with exponential backoff for rate limits
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: Error | null = null;
+
     const promptForAnalysis = `You are an expert prompt engineer and AI interaction specialist. Analyze the following prompt written in ${language.toUpperCase()} format and provide detailed, actionable feedback about its quality and effectiveness.
 
 Evaluate the prompt across these dimensions:
@@ -571,8 +576,9 @@ Provide comprehensive feedback with markdown formatting. Include:
 
 Be constructive, detailed, and focus on making this prompt more effective for AI interactions. Use markdown formatting (headings, bold, code blocks, lists) to organize your feedback clearly.`;
 
-    try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Retry function with exponential backoff
+    const makeRequest = async (): Promise<Response> => {
+        return await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -581,7 +587,7 @@ Be constructive, detailed, and focus on making this prompt more effective for AI
                 'X-Title': 'Xeltra Prompt Analyzer'
             },
             body: JSON.stringify({
-                model: 'mistralai/mistral-small-3.2-24b-instruct:free',
+                model: 'z-ai/glm-4.5-air:free',
                 messages: [
                     {
                         role: 'user',
@@ -590,10 +596,53 @@ Be constructive, detailed, and focus on making this prompt more effective for AI
                 ]
             })
         });
+    };
+
+    try {
+        let response: Response | null = null;
+
+        // Retry loop with exponential backoff
+        while (retryCount <= maxRetries) {
+            try {
+                response = await makeRequest();
+                
+                // If we get a 429, retry with backoff
+                if (response.status === 429 && retryCount < maxRetries) {
+                    const waitTime = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                    console.log(`Rate limited. Retrying in ${waitTime/1000}s... (Attempt ${retryCount + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    retryCount++;
+                    continue;
+                }
+                
+                // If successful or non-retryable error, break
+                break;
+            } catch (fetchError) {
+                lastError = fetchError instanceof Error ? fetchError : new Error('Network request failed');
+                if (retryCount < maxRetries) {
+                    const waitTime = Math.pow(2, retryCount) * 1000;
+                    console.log(`Request failed. Retrying in ${waitTime/1000}s... (Attempt ${retryCount + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    retryCount++;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (!response) {
+            throw lastError || new Error('Failed to get response after retries');
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('OpenRouter API error:', errorData);
+            
+            // Special handling for rate limit errors
+            if (response.status === 429) {
+                throw new Error('Rate limit exceeded. The free API tier has limited requests. Please wait a moment and try again.');
+            }
+            
             throw new Error(`OpenRouter API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
         }
 
@@ -609,7 +658,13 @@ Be constructive, detailed, and focus on making this prompt more effective for AI
     } catch (error) {
         console.error("Error analyzing prompt:", error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        alert(`Analysis failed: ${errorMessage}\n\nPlease try again or check your API key.`);
+        
+        // Show a more user-friendly alert for rate limit errors
+        if (errorMessage.includes('Rate limit')) {
+            alert(`⏳ ${errorMessage}\n\n💡 Tip: Free API models have strict rate limits. Wait 10-30 seconds before trying again.`);
+        } else {
+            alert(`Analysis failed: ${errorMessage}\n\nPlease try again or check your API key.`);
+        }
     } finally {
         setIsAnalyzing(false);
     }
