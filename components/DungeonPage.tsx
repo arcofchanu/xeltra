@@ -1440,32 +1440,16 @@ logging:
                                   whileHover={{ scale: 1.02, y: -5 }}
                                   className="bg-white border-2 border-black p-5 relative"
                                 >
-                                  {/* Contact Button */}
-                                  <motion.button
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => {
-                                      playClick();
-                                      setShowContactDialog(prompt);
-                                    }}
-                                    className="absolute top-2 right-2 p-2 bg-blue-500 text-white border-2 border-black hover:bg-black transition-all z-10"
-                                    title="Contact Seller"
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                    </svg>
-                                  </motion.button>
-                                  
                               {/* Media Preview */}
                               {prompt.media && prompt.media.length > 0 && (
-                                <div className="mb-3 border-2 border-black">
+                                <div className="mb-3 border-2 border-black relative">
                                   <img 
                                     src={prompt.media[0]} 
                                     alt={prompt.title}
                                     className="w-full h-32 object-cover"
                                   />
                                   {prompt.media.length > 1 && (
-                                    <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold">
+                                    <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold z-10">
                                       +{prompt.media.length - 1}
                                     </div>
                                   )}
@@ -1537,8 +1521,25 @@ logging:
                                     </motion.button>
                                   </div>
                                 ) : isOwned ? (
-                                  <div className="px-5 py-2 border-2 border-black font-bold bg-green-800 text-white">
-                                    OWNED
+                                  <div className="flex gap-2">
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => {
+                                        playClick();
+                                        setShowContactDialog(prompt);
+                                      }}
+                                      className="px-3 py-2 sm:px-4 sm:py-2 border-2 border-black font-bold bg-blue-500 text-white hover:bg-black hover:shadow-brutal transition-all text-sm flex items-center gap-1"
+                                      title="Contact Seller"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                      </svg>
+                                      <span className="hidden sm:inline">CONTACT</span>
+                                    </motion.button>
+                                    <div className="px-5 py-2 border-2 border-black font-bold bg-green-800 text-white">
+                                      OWNED
+                                    </div>
                                   </div>
                                 ) : (
                                   <motion.button
@@ -1575,75 +1576,90 @@ logging:
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.02, y: -5 }}
-                                onClick={() => setSelectedPrompt(prompt)}
-                                className="bg-white border-2 border-black p-5 cursor-pointer relative"
+                                className="bg-white border-2 border-black p-5 relative"
                               >
-                                {/* Contact Button */}
-                                <motion.button
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    playClick();
-                                    setShowContactDialog(prompt);
-                                  }}
-                                  className="absolute top-2 right-2 p-2 bg-blue-500 text-white border-2 border-black hover:bg-black transition-all z-10"
-                                  title="Contact Seller"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                  </svg>
-                                </motion.button>
-                                
                                 {/* Media Preview */}
                                 {prompt.media && prompt.media.length > 0 && (
-                                  <div className="mb-3 border-2 border-black">
+                                  <div className="mb-3 border-2 border-black relative">
                                     <img 
                                       src={prompt.media[0]} 
                                       alt={prompt.title}
-                                      className="w-full h-32 object-cover"
+                                      className="w-full h-32 object-cover cursor-pointer"
+                                      onClick={() => setSelectedPrompt(prompt)}
                                     />
                                     {prompt.media.length > 1 && (
-                                      <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold">
+                                      <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 text-xs font-bold z-10">
                                         +{prompt.media.length - 1}
                                       </div>
                                     )}
                                   </div>
                                 )}
                                 
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold bg-blue-500 text-white px-2 py-1 border border-black">
-                                      {prompt.category}
-                                    </span>
-                                    {prompt.language && (
-                                      <span className="text-xs font-bold bg-gray-200 border border-black px-2 py-1">
-                                        {prompt.language.toUpperCase()}
+                                <div 
+                                  className="cursor-pointer"
+                                  onClick={() => setSelectedPrompt(prompt)}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold bg-blue-500 text-white px-2 py-1 border border-black">
+                                        {prompt.category}
                                       </span>
-                                    )}
-                                    {prompt.model && (
-                                      <span className="text-xs font-bold bg-blue-500 text-white border border-black px-2 py-1">
-                                        {prompt.model}
-                                      </span>
+                                      {prompt.language && (
+                                        <span className="text-xs font-bold bg-gray-200 border border-black px-2 py-1">
+                                          {prompt.language.toUpperCase()}
+                                        </span>
+                                      )}
+                                      {prompt.model && (
+                                        <span className="text-xs font-bold bg-blue-500 text-white border border-black px-2 py-1">
+                                          {prompt.model}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <h3 className="text-xl font-bold mb-2">{prompt.title}</h3>
+                                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                    {prompt.description}
+                                  </p>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <p className="text-xs font-bold text-gray-500">
+                                      by {prompt.seller}
+                                    </p>
+                                    {prompt.averageRating !== undefined && prompt.averageRating > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-yellow-500">★</span>
+                                        <span className="text-xs font-bold">{prompt.averageRating.toFixed(1)}</span>
+                                        <span className="text-xs text-gray-500">({prompt.ratings?.length || 0})</span>
+                                      </div>
                                     )}
                                   </div>
-                                  <span className="text-xs font-bold text-gray-500">OWNED</span>
                                 </div>
-                                <h3 className="text-xl font-bold mb-2">{prompt.title}</h3>
-                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                  {prompt.description}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs font-bold text-gray-500">
-                                    by {prompt.seller}
-                                  </p>
-                                  {prompt.averageRating !== undefined && prompt.averageRating > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-yellow-500">★</span>
-                                      <span className="text-xs font-bold">{prompt.averageRating.toFixed(1)}</span>
-                                      <span className="text-xs text-gray-500">({prompt.ratings?.length || 0})</span>
-                                    </div>
-                                  )}
+                                
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 pt-3 border-t-2 border-black">
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      playClick();
+                                      setShowContactDialog(prompt);
+                                    }}
+                                    className="flex-1 px-3 py-2 sm:px-4 sm:py-2 border-2 border-black font-bold bg-blue-500 text-white hover:bg-black hover:shadow-brutal transition-all text-sm flex items-center justify-center gap-1"
+                                    title="Contact Seller"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <span className="hidden sm:inline">CONTACT</span>
+                                  </motion.button>
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setSelectedPrompt(prompt)}
+                                    className="flex-1 px-3 py-2 sm:px-4 sm:py-2 border-2 border-black font-bold bg-green-800 text-white hover:bg-black hover:shadow-brutal transition-all text-sm"
+                                  >
+                                    VIEW
+                                  </motion.button>
                                 </div>
                               </motion.div>
                             ))}
